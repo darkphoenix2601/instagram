@@ -10,7 +10,6 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 TOKEN = "6241362530:AAEe61FTUkEBmUu0zU6MtuzL3L9cqVLo7qo"
 
-
 def download(update: Update, context: CallbackContext):
     message = update.effective_message
     instagram_post = message.text
@@ -21,34 +20,33 @@ def download(update: Update, context: CallbackContext):
         pass
 
     if "instagram.com" in instagram_post:
-        changing_url = instagram_post.split("/")
-        url_code = changing_url[4]
-        url = f"https://instagram.com/p/{url_code}?__a=1"
+        url = f"{instagram_post}?__a=1"
         try:
             visit = requests.get(url).json()
-            checking_video = visit['graphql']['shortcode_media']['is_video']
         except:
-            context.bot.sendMessage(chat_id=update.message.chat_id, text="Send Me Only Public Instagram Posts ⚡️")
+            context.bot.sendMessage(chat_id=update.message.chat_id, text="Invalid Instagram URL")
             return
 
-        if checking_video is True:
-            try:
-                video_url = visit['graphql']['shortcode_media']['video_url']
-                context.bot.send_chat_action(chat_id=update.message.chat_id, action="upload_video")
-                context.bot.send_video(chat_id=update.message.chat_id, video=video_url)
-            except:
-                pass
+        if "graphql" in visit:
+            media_info = visit["graphql"]["shortcode_media"]
+            is_video = media_info.get("is_video", False)
 
-        elif checking_video is False:
-            try:
-                post_url = visit['graphql']['shortcode_media']['display_url']
-                context.bot.send_chat_action(chat_id=update.message.chat_id, action="upload_photo")
-                context.bot.send_photo(chat_id=update.message.chat_id, photo=post_url)
-            except:
-                pass
+            if is_video:
+                video_url = media_info.get("video_url")
+                if video_url:
+                    context.bot.send_chat_action(chat_id=update.message.chat_id, action="upload_video")
+                    context.bot.send_video(chat_id=update.message.chat_id, video=video_url)
+                else:
+                    context.bot.sendMessage(chat_id=update.message.chat_id, text="Sorry, unable to download the video.")
+            else:
+                photo_url = media_info.get("display_url")
+                if photo_url:
+                    context.bot.send_chat_action(chat_id=update.message.chat_id, action="upload_photo")
+                    context.bot.send_photo(chat_id=update.message.chat_id, photo=photo_url)
+                else:
+                    context.bot.sendMessage(chat_id=update.message.chat_id, text="Sorry, unable to download the photo.")
         else:
-            context.bot.send_chat_action(chat_id=update.message.chat_id, action="typing")
-            context.bot.sendMessage(chat_id=update.message.chat_id, text="I Can't Send You Private Posts :-( ")
+            context.bot.sendMessage(chat_id=update.message.chat_id, text="Sorry, unsupported Instagram URL.")
     else:
         context.bot.sendMessage(chat_id=update.message.chat_id, text="Kindly Send Me Public Instagram Video/Photo URL")
 
@@ -65,4 +63,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-  
+          
