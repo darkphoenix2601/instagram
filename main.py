@@ -8,7 +8,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO,
                     handlers=[logging.StreamHandler()])
 
-TOKEN = "6241362530:AAGXEHxQ_YNZiZjMHuL5MR1P3W3mXwmvH-4"
+TOKEN = "6241362530:AAEe61FTUkEBmUu0zU6MtuzL3L9cqVLo7qo"
 
 
 def download(update: Update, context: CallbackContext):
