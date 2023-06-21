@@ -1,74 +1,74 @@
-import os
+from telegram.ext import Updater, MessageHandler, Filters, CallbackContext
+from telegram import Update, ParseMode
+from instagram_private_api import Client
 import logging
-import instaloader
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
-from telegram import ParseMode, Update
+import requests
 
-# Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
+                    level=logging.INFO,
+                    handlers=[logging.StreamHandler()])
 
-# Get your Telegram bot token from environment variable
-TOKEN = os.environ.get('TELEGRAM_TOKEN')
+TOKEN = "6241362530:AAGABEK3ngb5Lg1sQF1KbPHK29FSkWEgyUs"
 
-# Initialize Instaloader
-loader = instaloader.Instaloader()
-
-def start(update: Update, context: CallbackContext):
-    """Handler for the /start command."""
-    context.bot.send_message(chat_id=update.message.chat_id,
-                             text="Welcome! Just send me the link to an Instagram Reel or post and I will provide you with the download link.")
-
-def download_instagram_post(update: Update, context: CallbackContext):
-    """Handler for downloading Instagram posts."""
-    instagram_post = update.message.text
-
+def download_insta_post(media_url: str):
     try:
-        # Download the post using Instaloader
-        shortcode = instaloader.utils.get_shortcode_from_url(instagram_post)
-        loader.download_by_shortcode(shortcode, target=f"{shortcode}")
-        file_path = f"{shortcode}/{shortcode}.jpg"
-        
-        # Send the downloaded post as a photo
-        context.bot.send_photo(chat_id=update.message.chat_id,
-                               photo=open(file_path, 'rb'))
+        session = requests.Session()
+        session.headers.update({"User-Agent": "Mozilla/5.0"})
+
+        api = Client()
+
+        post_id = media_url.split("/")[-2]
+        media_info = api.media_info(post_id)
+        media_url = media_info.get("video_url") or media_info.get("photo_url")
+
+        if media_url:
+            response = session.get(media_url)
+            if response.status_code == 200:
+                filename = post_id + ".mp4" if media_info.get("video_url") else post_id + ".jpg"
+                with open(filename, "wb") as f:
+                    f.write(response.content)
+                return filename
+
     except Exception as e:
         logging.error(f"Error downloading Instagram post: {e}")
-        context.bot.send_message(chat_id=update.message.chat_id,
-                                 text="Sorry, I couldn't download the Instagram post.")
 
-def download_instagram_reel(update: Update, context: CallbackContext):
-    """Handler for downloading Instagram Reels."""
-    instagram_reel = update.message.text
+    return None
 
-    try:
-        # Send the Instagram Reel URL as a message
-        context.bot.send_message(chat_id=update.message.chat_id,
-                                 text=f"Here is the link to the Instagram Reel: {instagram_reel}")
-    except Exception as e:
-        logging.error(f"Error sending Instagram Reel link: {e}")
-        context.bot.send_message(chat_id=update.message.chat_id,
-                                 text="Sorry, I couldn't send the Instagram Reel link.")
+
+def download(update: Update, context: CallbackContext):
+    message = update.effective_message
+    instagram_post = message.text
+
+    if instagram_post == "/start":
+        context.bot.send_chat_action(chat_id=update.message.chat_id, action="typing")
+        update.message.reply_text(
+            "❤️ Thanks For Using Me Just Send Me the Link in the Following Format:\n"
+            "🔥 Format: https://www.instagram.com/p/B4zvXCIlNTw/\n"
+            "Videos Must Be Less Than 20MB, and it Supports Public and Private Posts\n"
+            "\n<b>🌀 Source:</b> [GitHub](https://github.com/darkphoenix2601/instagram)",
+            parse_mode=ParseMode.HTML,
+            disable_web_page_preview=True
+        )
+    else:
+        filename = download_insta_post(instagram_post)
+        if filename:
+            with open(filename, "rb") as f:
+                if filename.endswith(".mp4"):
+                    context.bot.send_video(chat_id=update.message.chat_id, video=f)
+                else:
+                    context.bot.send_photo(chat_id=update.message.chat_id, photo=f)
+        else:
+            context.bot.sendMessage(chat_id=update.message.chat_id, text="Invalid Instagram URL")
 
 def main():
-    # Create the Updater and pass it your bot's token
     updater = Updater(TOKEN, use_context=True)
-
-    # Get the dispatcher to register handlers
     dp = updater.dispatcher
-
-    # Add command handlers
-    dp.add_handler(CommandHandler("start", start))
-
-    # Add message handlers
-    dp.add_handler(MessageHandler(Filters.regex(r'https?://(www\.)?instagram\.com/.*'), download_instagram_post))
-    dp.add_handler(MessageHandler(Filters.regex(r'https?://(www\.)?instagram\.com/reel/.*'), download_instagram_reel))
-
-    # Start the bot
+    logging.info("Setting Up MessageHandler")
+    dp.add_handler(MessageHandler(Filters.text, download))
     updater.start_polling()
     logging.info("Bot started!")
     updater.idle()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
   
