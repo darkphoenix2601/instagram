@@ -8,7 +8,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO,
                     handlers=[logging.StreamHandler()])
 
-TOKEN = "6241362530:AAGABEK3ngb5Lg1sQF1KbPHK29FSkWEgyUs"
+TOKEN = "6241362530:AAEcRNV2GO_JksE7RaOM-IyaJdWva6-fixs"
 
 def download_insta_post(media_url: str):
     try:
