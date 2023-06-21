@@ -8,7 +8,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO,
                     handlers=[logging.StreamHandler()])
 
-TOKEN = "6241362530:AAG2vZdRSEKONlWfplorr3aNOO-qXoZd4c8"
+TOKEN = "6241362530:AAGJtLq1kayHL1kbDRqLEw03kJK_Gkr1kyY"
 USERNAME = "gods.myth"
 PASSWORD = "kartik@2601"
 
