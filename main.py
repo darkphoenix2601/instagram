@@ -2,7 +2,7 @@
 # DONT_REMOVE_THIS
 #  TheDarkW3b (c)
 
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, filters, CallbackContext
 from telegram import ParseMode, Update
 import logging
 import requests
@@ -61,7 +61,7 @@ def main():
     updater = Updater(TOKEN, use_context=True)
     dp = updater.dispatcher
     logger.info("Setting Up MessageHandler")
-    dp.add_handler(MessageHandler(Filters.text, download))
+    dp.add_handler(MessageHandler(filters.text, download))
     updater.start_polling()
     logging.info("Starting Long Polling!")
     updater.idle()
