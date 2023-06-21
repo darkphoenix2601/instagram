@@ -8,7 +8,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO,
                     handlers=[logging.StreamHandler()])
 
-TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
+TOKEN = "6241362530:AAGXEHxQ_YNZiZjMHuL5MR1P3W3mXwmvH-4"
 
 def download(update: Update, context: CallbackContext):
     message = update.effective_message
