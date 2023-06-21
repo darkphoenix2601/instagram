@@ -9,7 +9,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO)
 
 # Get your Telegram bot token from environment variable
-TOKEN = os.environ.get('6241362530:AAHq-3ruJbiYbVRZoT4rAx8hSMGy5tGksq4')
+TOKEN = os.environ.get('TELEGRAM_TOKEN')
 
 # Initialize Instaloader
 loader = instaloader.Instaloader()
