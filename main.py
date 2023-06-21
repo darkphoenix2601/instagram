@@ -1,46 +1,74 @@
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
-from telegram import ParseMode, Update
+import os
 import logging
 import instaloader
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram import ParseMode, Update
 
+# Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO,
-                    handlers=[logging.StreamHandler()])
+                    level=logging.INFO)
 
-TOKEN = "6241362530:AAHq-3ruJbiYbVRZoT4rAx8hSMGy5tGksq4"
+# Get your Telegram bot token from environment variable
+TOKEN = os.environ.get('6241362530:AAHq-3ruJbiYbVRZoT4rAx8hSMGy5tGksq4')
 
-def download(update: Update, context: CallbackContext):
-    message = update.effective_message
-    instagram_post = message.text
-    if instagram_post == "/start":
-        context.bot.send_chat_action(chat_id=update.message.chat_id, action="typing")
-        update.message.reply_text("❤️ Thanks For Using Me Just Send Me The Link In Below Format  \n🔥 Format :- https://www.instagram.com/p/B4zvXCIlNTw/ \nVideos Must Be Less Than 20MB, For Now, It Cannot Support Long IGTV Videos \n\n<b>Support Group :-</b> @Technology_Arena \n<b>🌀 Source</b> \nhttps://github.com/TheDarkW3b/instagram", parse_mode=ParseMode.HTML, disable_web_page_preview=True)
-    else:
-        pass
+# Initialize Instaloader
+loader = instaloader.Instaloader()
 
-    if "instagram.com" in instagram_post:
-        loader = instaloader.Instaloader()
-        try:
-            shortcode = instaloader.utils.get_shortcode_from_url(instagram_post)
-            loader.download_by_shortcode(shortcode, target="#tmp")
-            file_path = f"#tmp/{shortcode}.mp4"
-            context.bot.send_chat_action(chat_id=update.message.chat_id, action="upload_video")
-            context.bot.send_video(chat_id=update.message.chat_id, video=open(file_path, 'rb'))
-        except:
-            context.bot.sendMessage(chat_id=update.message.chat_id, text="Invalid Instagram URL")
-    else:
-        context.bot.sendMessage(chat_id=update.message.chat_id, text="Kindly Send Me Public Instagram Reels URL")
+def start(update: Update, context: CallbackContext):
+    """Handler for the /start command."""
+    context.bot.send_message(chat_id=update.message.chat_id,
+                             text="Welcome! Just send me the link to an Instagram Reel or post and I will provide you with the download link.")
 
+def download_instagram_post(update: Update, context: CallbackContext):
+    """Handler for downloading Instagram posts."""
+    instagram_post = update.message.text
+
+    try:
+        # Download the post using Instaloader
+        shortcode = instaloader.utils.get_shortcode_from_url(instagram_post)
+        loader.download_by_shortcode(shortcode, target=f"{shortcode}")
+        file_path = f"{shortcode}/{shortcode}.jpg"
+        
+        # Send the downloaded post as a photo
+        context.bot.send_photo(chat_id=update.message.chat_id,
+                               photo=open(file_path, 'rb'))
+    except Exception as e:
+        logging.error(f"Error downloading Instagram post: {e}")
+        context.bot.send_message(chat_id=update.message.chat_id,
+                                 text="Sorry, I couldn't download the Instagram post.")
+
+def download_instagram_reel(update: Update, context: CallbackContext):
+    """Handler for downloading Instagram Reels."""
+    instagram_reel = update.message.text
+
+    try:
+        # Send the Instagram Reel URL as a message
+        context.bot.send_message(chat_id=update.message.chat_id,
+                                 text=f"Here is the link to the Instagram Reel: {instagram_reel}")
+    except Exception as e:
+        logging.error(f"Error sending Instagram Reel link: {e}")
+        context.bot.send_message(chat_id=update.message.chat_id,
+                                 text="Sorry, I couldn't send the Instagram Reel link.")
 
 def main():
-    updater = Updater(TOKEN)
+    # Create the Updater and pass it your bot's token
+    updater = Updater(TOKEN, use_context=True)
+
+    # Get the dispatcher to register handlers
     dp = updater.dispatcher
-    logging.info("Setting Up MessageHandler")
-    dp.add_handler(MessageHandler(Filters.text, download))
+
+    # Add command handlers
+    dp.add_handler(CommandHandler("start", start))
+
+    # Add message handlers
+    dp.add_handler(MessageHandler(Filters.regex(r'https?://(www\.)?instagram\.com/.*'), download_instagram_post))
+    dp.add_handler(MessageHandler(Filters.regex(r'https?://(www\.)?instagram\.com/reel/.*'), download_instagram_reel))
+
+    # Start the bot
     updater.start_polling()
-    logging.info("Starting Long Polling!")
+    logging.info("Bot started!")
     updater.idle()
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
+  
