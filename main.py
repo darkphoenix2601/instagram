@@ -1,50 +1,85 @@
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
-from telegram import ParseMode, Update
-import logging
 import instaloader
+from instaloader import Profile
+from telegram import Update
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO,
-                    handlers=[logging.StreamHandler()])
+# Replace 'YOUR_TELEGRAM_TOKEN' with your Telegram bot token
+TOKEN = '5154547704:AAGpB62V1mpiXhCU0fiFk4S__WMTTlF6pPM'
 
-TOKEN = "5154547704:AAHQcQ6s6Q6Pp489eWQ2pL2keZle7-Us7TM"
-USERNAME = "gods.myth"
-PASSWORD = "kartik@2601"
+# Create an instance of Instaloader
+L = instaloader.Instaloader()
 
-def download(update: Update, context: CallbackContext):
-    message = update.effective_message
-    instagram_post = message.text
-    if instagram_post == "/start":
-        context.bot.send_chat_action(chat_id=update.message.chat_id, action="typing")
-        update.message.reply_text("❤️ Thanks For Using Me Just Send Me The Link In Below Format  \n🔥 Format :- https://www.instagram.com/p/B4zvXCIlNTw/ \nVideos Must Be Less Than 20MB, For Now, It Cannot Support Long IGTV Videos \n\n<b>Support Group :-</b> @Technology_Arena \n<b>🌀 Source</b> \nhttps://github.com/TheDarkW3b/instagram", parse_mode=ParseMode.HTML, disable_web_page_preview=True)
-    else:
-        pass
+# Handle the '/start' command
+def start(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text('Welcome to your Instagram bot!')
 
-    if "instagram.com" in instagram_post:
-        try:
-            loader = instaloader.Instaloader()
-            loader.login(USERNAME, PASSWORD)
-            post_url = instagram_post.strip().split("?")[0]
-            loader.download_post(post_url, target=".")
-            context.bot.send_chat_action(chat_id=update.message.chat_id, action="upload_photo")
-            context.bot.send_photo(chat_id=update.message.chat_id, photo=open(f"{post_url}.jpg", "rb"))
-        except Exception as e:
-            logging.error(f"Error downloading Instagram post: {e}")
-            context.bot.sendMessage(chat_id=update.message.chat_id, text="Error downloading Instagram post.")
-    else:
-        context.bot.sendMessage(chat_id=update.message.chat_id, text="Kindly Send Me Public Instagram Post URL")
+# Handle the '/inbox' command
+def inbox(update: Update, context: CallbackContext) -> None:
+    try:
+        # Login to Instagram account
+        L.login('your_username', 'your_password')
 
+        # Get the authenticated user's profile
+        profile = Profile.from_username(L.context, 'your_username')
 
-def main():
+        # Get the user's inbox
+        inbox = profile.get_inbox()
+
+        # Retrieve the last message
+        last_message = inbox[0]
+
+        # Send the last message to Telegram
+        update.message.reply_text(f'Last Message:\n\n{last_message.text}')
+    except instaloader.exceptions.LoginRequiredException:
+        update.message.reply_text('Login required to access inbox.')
+    except Exception as e:
+        update.message.reply_text(f'An error occurred: {str(e)}')
+
+# Handle incoming messages
+def message_handler(update: Update, context: CallbackContext) -> None:
+    try:
+        # Login to Instagram account
+        L.login('your_username', 'your_password')
+
+        # Get the authenticated user's profile
+        profile = Profile.from_username(L.context, 'your_username')
+
+        # Get the user's inbox
+        inbox = profile.get_inbox()
+
+        # Retrieve the last message
+        last_message = inbox[0]
+
+        # Reply to the last message with the incoming Telegram message
+        last_message.reply(context.bot, update.message.text)
+    except instaloader.exceptions.LoginRequiredException:
+        update.message.reply_text('Login required to send message.')
+    except Exception as e:
+        update.message.reply_text(f'An error occurred: {str(e)}')
+
+# Handle the '/download' command
+def download(update: Update, context: CallbackContext) -> None:
+    try:
+        shortcode = context.args[0]
+        post = instaloader.Post.from_shortcode(L.context, shortcode)
+        L.download_post(post, target='downloads')
+        update.message.reply_text('Post downloaded successfully!')
+    except Exception as e:
+        update.message.reply_text(f'An error occurred while downloading the post: {str(e)}')
+
+def main() -> None:
     updater = Updater(TOKEN)
-    dp = updater.dispatcher
-    logging.info("Setting Up MessageHandler")
-    dp.add_handler(MessageHandler(Filters.text, download))
+
+    dispatcher = updater.dispatcher
+
+    dispatcher.add_handler(CommandHandler("start", start))
+    dispatcher.add_handler(CommandHandler("inbox", inbox))
+    dispatcher.add_handler(CommandHandler("download", download))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, message_handler))
+
     updater.start_polling()
-    logging.info("Starting Long Polling!")
     updater.idle()
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
   
