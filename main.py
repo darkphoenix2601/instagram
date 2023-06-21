@@ -10,6 +10,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 TOKEN = "6241362530:AAGXEHxQ_YNZiZjMHuL5MR1P3W3mXwmvH-4"
 
+
 def download(update: Update, context: CallbackContext):
     message = update.effective_message
     instagram_post = message.text
@@ -24,11 +25,11 @@ def download(update: Update, context: CallbackContext):
         url_code = changing_url[4]
         url = f"https://instagram.com/p/{url_code}?__a=1"
         try:
-            global checking_video
             visit = requests.get(url).json()
             checking_video = visit['graphql']['shortcode_media']['is_video']
         except:
             context.bot.sendMessage(chat_id=update.message.chat_id, text="Send Me Only Public Instagram Posts ⚡️")
+            return
 
         if checking_video is True:
             try:
@@ -64,3 +65,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+  
