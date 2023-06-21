@@ -1,14 +1,13 @@
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 from telegram import ParseMode, Update
 import logging
-import requests
-from instagram_private_api import Client, ClientCompatPatch
+import instaloader
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO,
                     handlers=[logging.StreamHandler()])
 
-TOKEN = "6241362530:AAGJtLq1kayHL1kbDRqLEw03kJK_Gkr1kyY"
+TOKEN = "5154547704:AAHQcQ6s6Q6Pp489eWQ2pL2keZle7-Us7TM"
 USERNAME = "gods.myth"
 PASSWORD = "kartik@2601"
 
@@ -22,42 +21,21 @@ def download(update: Update, context: CallbackContext):
         pass
 
     if "instagram.com" in instagram_post:
-        changing_url = instagram_post.split("/")
-        url_code = changing_url[4]
-        url = f"https://instagram.com/p/{url_code}?__a=1"
         try:
-            global checking_video
-            visit = requests.get(url).json()
-            checking_video = visit['graphql']['shortcode_media']['is_video']
-        except:
-            context.bot.sendMessage(chat_id=update.message.chat_id, text="Send Me Only Public Instagram Posts ⚡️")
-
-        if checking_video is True:
-            try:
-                video_url = visit['graphql']['shortcode_media']['video_url']
-                context.bot.send_chat_action(chat_id=update.message.chat_id, action="upload_video")
-                context.bot.send_video(chat_id=update.message.chat_id, video=video_url)
-            except:
-                pass
-
-        elif checking_video is False:
-            try:
-                post_url = visit['graphql']['shortcode_media']['display_url']
-                context.bot.send_chat_action(chat_id=update.message.chat_id, action="upload_photo")
-                context.bot.send_photo(chat_id=update.message.chat_id, photo=post_url)
-            except:
-                pass
-        else:
-            context.bot.send_chat_action(chat_id=update.message.chat_id, action="typing")
-            context.bot.sendMessage(chat_id=update.message.chat_id, text="I Can't Send You Private Posts :-( ")
+            loader = instaloader.Instaloader()
+            loader.login(USERNAME, PASSWORD)
+            post_url = instagram_post.strip().split("?")[0]
+            loader.download_post(post_url, target=".")
+            context.bot.send_chat_action(chat_id=update.message.chat_id, action="upload_photo")
+            context.bot.send_photo(chat_id=update.message.chat_id, photo=open(f"{post_url}.jpg", "rb"))
+        except Exception as e:
+            logging.error(f"Error downloading Instagram post: {e}")
+            context.bot.sendMessage(chat_id=update.message.chat_id, text="Error downloading Instagram post.")
     else:
-        context.bot.sendMessage(chat_id=update.message.chat_id, text="Kindly Send Me Public Instagram Video/Photo URL")
+        context.bot.sendMessage(chat_id=update.message.chat_id, text="Kindly Send Me Public Instagram Post URL")
 
 
 def main():
-    api = Client(USERNAME, PASSWORD)
-    ClientCompatPatch(api)
-    
     updater = Updater(TOKEN)
     dp = updater.dispatcher
     logging.info("Setting Up MessageHandler")
@@ -69,3 +47,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+  
